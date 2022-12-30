@@ -16,19 +16,28 @@ class ModelMetaclass(type):
 
 
 class FieldsList:
-    ...
+    def __get__(self, obj):
+        ...
+
+    def __set__(self, obj, value):
+        ...
 
 
 class Model:
-    __fields__ = FieldsList()
-    __fields_type_list__ = []
+    __fields__: dict = {}
+    __fields_type_list__: list = []
 
     def __new__(cls, *args, **kwargs):
-        members = inspect.getmembers(cls)
+        if not hasattr(cls, '__ready__'):
+            prepare_fields(cls)
         obj = super(Model, cls).__new__(cls)
-        for key, value in kwargs.items():
-            setattr(obj, key, value)
         return obj
+
+    def __init__(self, *args, **kwargs):
+        for k, field in self.__fields__.items():
+            value = kwargs.get(k, None)
+            value = field.prepare_value(value, self)
+            setattr(self, k, value)
 
     def dict(
             self,
@@ -53,16 +62,17 @@ class Model:
             dic[name] = [item.dict() for item in dic[name]]
         return dic
 
-    def json(self):
+    def json(self) -> str:
         dic = self.dict()
         jsn = json.dumps(dic)
         return jsn
 
 
-def get_fields_from_annotations(fields, annotation, model):
+def get_fields_from_annotations(cls, annotations: dict = {}):
+    fields = {}
     fields_list = []
     fields_object = []
-    for name, typee in annotation.items():
+    for name, typee in annotations.items():
         if name not in fields:
             field = Field(field_type=typee, name=name)
             field.model = model
@@ -102,33 +112,47 @@ def create_init_function():
     return init
 
 
+def prepare_fields(cls):
+    members = inspect.getmembers(cls)
+    annotations = cls.__annotations__
+    fields, fields_list, fields_object = get_fields_from_annotations(cls, annotations=annotations)
+    for member in members:
+        key, value = member
+        if key.startswith('__') or isinstance(value, types.FunctionType):
+            continue
+        if type(value) == Field:
+            field = fields[key]
+            value.name = field.name
+            value.null = field.null
+            value.type = field.type
+            fields[key] = value
+        else:
+            fields[key].default = value
+    # cls = type(cls.__name__, (Model,), {**fields, })
+    cls.__fields__ = fields
+    cls.__ready__ = True
+    cls.__fields_type_list__ = fields_list
+    cls.__fields_type_object__ = fields_object
+    return cls
+
+
+def prepare_db_config(cls, table: str, pk: str = ''):
+    cls.__db__ = {
+        'table': table if table else cls.__name__.lower(),
+        'pk': pk if pk else 'id'
+    }
+    return cls
+
+
 def model():
     def wrapper(cls):
-        members = inspect.getmembers(cls)
-        fields = {}
-        for member in members:
-            key, value = member
-            if not key.startswith('__'):
-                if type(value) == Field:
-                    field = fields[key]
-                    value.name = field.name
-                    value.null = field.null
-                    value.type = field.type
-                    fields[key] = value
-                elif isinstance(value, types.FunctionType):
-                    continue
-                else:
-                    fields[key].default = value
-                continue
-            if key == '__annotations__':
-                fields, fields_list, fields_object = get_fields_from_annotations(fields, value, cls)
-        cls.__fields__ = fields
-        cls.__fields_type_list__ = fields_list
-        cls.__fields_type_object__ = fields_object
-        cls.__init__ = create_init_function()
-        cls.dict = Model.dict
-        cls.json = Model.json
-        return cls
+        return prepare_fields(cls)
+    return wrapper
+
+
+def db(table: str = '', pk: str = ''):
+    def wrapper(cls):
+        return prepare_db_config(cls, table=table, pk=pk)
     return wrapper
 
 
