@@ -1,6 +1,7 @@
 import inspect
 import json
 import types
+import typing
 from typing import Set, Dict
 
 from .fields import Field
@@ -88,10 +89,13 @@ def get_fields_from_annotations(cls, annotations: dict = {}):
             if '__origin__' in opts:
                 args = typee.__args__
                 origin = typee.__origin__
+                name_ = opts['_name']
                 field.type = args[0]
                 if len(args) > 1:
                     if isinstance(args[-1], type(None)):
                         field.required = False
+                if name_ == 'Optional':
+                    field.required = False
                 field.list = origin == list
                 field.object = origin == dict
                 if field.list:
@@ -112,23 +116,19 @@ def create_init_function():
     return init
 
 
+def create_custom_class(name, fields):
+    cls = type(name, (Model,), {**fields, })
+    return cls
+
+
 def prepare_fields(cls):
     members = inspect.getmembers(cls)
     annotations = cls.__annotations__
     fields, fields_list, fields_object = get_fields_from_annotations(cls, annotations=annotations)
-    for member in members:
-        key, value = member
-        if key.startswith('__') or isinstance(value, types.FunctionType):
-            continue
-        if type(value) == Field:
-            field = fields[key]
-            value.name = field.name
-            value.null = field.null
-            value.type = field.type
-            fields[key] = value
-        else:
-            fields[key].default = value
-    # cls = type(cls.__name__, (Model,), {**fields, })
+    for field in fields:
+        ...
+    if not hasattr(cls, '__ready__'):
+        cls = create_custom_class(cls.__name__, fields)
     cls.__fields__ = fields
     cls.__ready__ = True
     cls.__fields_type_list__ = fields_list

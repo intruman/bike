@@ -5,9 +5,11 @@ from typing import Any
 
 class Field:
     def __new__(cls, *args, **kwargs):
-        members = inspect.getmembers(cls)
         obj = super().__new__(cls)
         return obj
+
+    def __get__(self, obj, objtype=None):
+        return 10
 
     def __init__(
             self,
@@ -41,7 +43,7 @@ class Field:
         if not value:
             value = self.default or None
         if self.type == int:
-            value = int(value)
+            value = int(value) if value else None
         if self.type == datetime.datetime:
             value = datetime.datetime.strptime(value)
         if self.type == datetime.date:
@@ -54,4 +56,4 @@ class Field:
             value = [self.type(**item) for item in value]
         for validator in self.validators_pos:
             value = validator(instance, value)
-        return value
+  
