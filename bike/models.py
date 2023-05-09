@@ -1,9 +1,6 @@
 import inspect
 import json
-import types
-import typing
-from typing import Set, Dict
-
+from typing import Set, Any
 from .fields import Field
 
 
@@ -24,115 +21,41 @@ class FieldsList:
         ...
 
 
-class Model:
-    __fields__: dict = {}
-    __fields_type_list__: list = []
-
-    def __new__(cls, *args, **kwargs):
-        if not hasattr(cls, '__ready__'):
-            prepare_fields(cls)
-        obj = super(Model, cls).__new__(cls)
-        return obj
-
-    def __init__(self, *args, **kwargs):
-        for k, field in self.__fields__.items():
-            value = kwargs.get(k, None)
-            value = field.prepare_value(value, self)
-            setattr(self, k, value)
-
-    def dict(
-            self,
-            *,
-            alias: bool = False,
-            null: bool = True,
-            excludes: Set = None
-    ) -> Dict:
-        if not excludes:
-            excludes = set()
-        dic = {}
-        for field in self.__fields__.values():
-            if field.name in excludes:
-                continue
-            if not null and self.__dict__[field.name] is None:
-                continue
-            if alias:
-                dic[field.alias or field.name] = self.__dict__[field.name]
+def create_init_function(fields):
+    params_required_txt = ''
+    params_optional_txt = ''
+    body_fn = ''
+    for k, field in fields.items():
+        param = f'{k}: {field.type.__name__}'
+        if field.required:
+            if field.default:
+                param = f"{param} = '{field.default}'"
+                params_optional_txt = f'{params_optional_txt}, {param}' if params_optional_txt else param
             else:
-                dic[field.name] = self.__dict__[field.name]
-        for name in self.__fields_type_list__:
-            dic[name] = [item.dict() for item in dic[name]]
-        return dic
-
-    def json(self) -> str:
-        dic = self.dict()
-        jsn = json.dumps(dic)
-        return jsn
-
-
-def get_fields_from_annotations(cls, annotations: dict = {}):
-    fields = {}
-    fields_list = []
-    fields_object = []
-    for name, typee in annotations.items():
-        if name not in fields:
-            field = Field(field_type=typee, name=name)
-            field.model = model
-            if name in __validators__:
-                validators = __validators__[name]
-                for vali in validators:
-                    if vali['pre']:
-                        field.validators_pre.append(vali['func'])
-                    else:
-                        field.validators_pos.append(vali['func'])
-                del __validators__[name]
-            opts = typee.__dict__
-            if '__origin__' in opts:
-                args = typee.__args__
-                origin = typee.__origin__
-                name_ = opts['_name']
-                field.type = args[0]
-                if len(args) > 1:
-                    if isinstance(args[-1], type(None)):
-                        field.required = False
-                if name_ == 'Optional':
-                    field.required = False
-                field.list = origin == list
-                field.object = origin == dict
-                if field.list:
-                    fields_list.append(name)
-                if field.object:
-                    fields_object.append(name)
-            fields[name] = field
-    return fields, fields_list, fields_object
-
-
-def create_init_function():
-    def init(self, *args, **kwargs):
-        fields = self.__fields__
-        for k, field in fields.items():
-            value = kwargs.get(k, None)
-            value = field.prepare_value(value, self)
-            setattr(self, k, value)
-    return init
+                params_required_txt = f'{params_required_txt}, {param}' if params_required_txt else param
+        else:
+            if field.default:
+                default = field.default
+            else:
+                default = {
+                    'str': '""',
+                    'int': '0',
+                    'float': '0.0',
+                    'bool': 'False'
+                }
+            param = f'{param} = {default.get(field.type.__name__, "None")}'
+            params_optional_txt = f'{params_optional_txt}, {param}' if params_optional_txt else param
+        statement = f'self.{k} = self.__fields__["{k}"].prepare_value({k}, self)'
+        body_fn += f'\t{statement}\n'
+    params_txt = f'*, {params_required_txt}, {params_optional_txt}'
+    init_fn = f'def __init__(self, {params_txt}):\n{body_fn}'
+    ns = {}
+    exec(init_fn, None, ns)
+    return ns['__init__']
 
 
 def create_custom_class(name, fields):
     cls = type(name, (Model,), {**fields, })
-    return cls
-
-
-def prepare_fields(cls):
-    members = inspect.getmembers(cls)
-    annotations = cls.__annotations__
-    fields, fields_list, fields_object = get_fields_from_annotations(cls, annotations=annotations)
-    for field in fields:
-        ...
-    if not hasattr(cls, '__ready__'):
-        cls = create_custom_class(cls.__name__, fields)
-    cls.__fields__ = fields
-    cls.__ready__ = True
-    cls.__fields_type_list__ = fields_list
-    cls.__fields_type_object__ = fields_object
     return cls
 
 
@@ -164,3 +87,109 @@ def validator(field, pre=False):
         return fnc
     return wrapper
 
+
+def prepare_class_members(members):
+    ret = {mb[0]: mb[1] for mb in members}
+    return ret
+
+
+def prepare_fields(cls):
+    members = {mb[0]: mb[1] for mb in inspect.getmembers(cls)}
+    annotations = cls.__annotations__
+    fields, fields_list, fields_object = get_fields_from_annotations(cls, annotations=annotations, members=members)
+    if not hasattr(cls, '__ready__'):
+        cls = create_custom_class(cls.__name__, fields)
+    cls.__fields__ = fields
+    cls.__ready__ = True
+    cls.__fields_type_list__ = fields_list
+    cls.__fields_type_object__ = fields_object
+    init_fn = create_init_function(fields)
+    setattr(cls, '__init__', init_fn)
+    return cls
+
+
+def get_fields_from_annotations(cls, annotations=None, members=None):
+    annotations = annotations or {}
+    members = members or {}
+    fields = {}
+    fields_list = []
+    fields_object = []
+    for name, typee in annotations.items():
+        if name not in fields:
+            if name in members:
+                value = members[name]
+                if isinstance(value, Field):
+                    field = value
+                    field.name = name
+                    field.type = typee
+                else:
+                    field = Field(field_type=typee, name=name, default=value)
+            else:
+                field = Field(field_type=typee, name=name)
+            field.model = model
+            if name in __validators__:
+                validators = __validators__[name]
+                for vali in validators:
+                    if vali['pre']:
+                        field.validators_pre.append(vali['func'])
+                    else:
+                        field.validators_pos.append(vali['func'])
+                del __validators__[name]
+            opts = typee.__dict__
+            if '__origin__' in opts:
+                args = typee.__args__
+                origin = typee.__origin__
+                name_ = opts['_name']
+                field.type = args[0]
+                if len(args) > 1:
+                    if isinstance(args[-1], type(None)):
+                        field.required = False
+                if name_ == 'Optional':
+                    field.required = False
+                field.list = origin == list
+                field.object = origin == dict
+                if field.list:
+                    fields_list.append(name)
+                if field.object:
+                    fields_object.append(name)
+            fields[name] = field
+    return fields, fields_list, fields_object
+
+
+class Model:
+    __fields__: dict = {}
+    __fields_type_list__: list = []
+
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(cls, '__ready__'):
+            prepare_fields(cls)
+        obj = super(Model, cls).__new__(cls)
+        return obj
+
+    def dict(
+            self,
+            *,
+            alias: bool = False,
+            null: bool = True,
+            excludes: Set = None
+    ) -> dict:
+        if not excludes:
+            excludes = set()
+        dic = {}
+        for field in self.__fields__.values():
+            if field.name in excludes:
+                continue
+            if not null and self.__dict__[field.name] is None:
+                continue
+            if alias:
+                dic[field.alias or field.name] = self.__dict__[field.name]
+            else:
+                dic[field.name] = self.__dict__[field.name]
+        for name in self.__fields_type_list__:
+            dic[name] = [item.dict() for item in dic[name]]
+        return dic
+
+    def json(self) -> str:
+        dic = self.dict()
+        jsn = json.dumps(dic)
+        return jsn

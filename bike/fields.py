@@ -8,14 +8,11 @@ class Field:
         obj = super().__new__(cls)
         return obj
 
-    def __get__(self, obj, objtype=None):
-        return 10
-
     def __init__(
             self,
             default: Any = None,
             *,
-            field_type=str,
+            field_type: type = str,
             name: str = '',
             null: bool = True,
             alias: str = ''
@@ -31,6 +28,20 @@ class Field:
         self.model = None
         self.validators_pre = []
         self.validators_pos = []
+
+    def __str__(self):
+        return f'Field:{self.name}({self.type})'
+
+    def __repr__(self):
+        return f'Field:{self.name}({self.type})'
+
+    def __get__(self, obj, owner):
+        value = getattr(obj, f'_{self.name}')
+        return value
+
+    def __set__(self, obj, value):
+        value = self.prepare_value(value, self)
+        setattr(obj, f'_{self.name}', value)
 
     def prepare_value(self, value, instance):
         if (value is None or value == '') and self.required:
@@ -56,4 +67,5 @@ class Field:
             value = [self.type(**item) for item in value]
         for validator in self.validators_pos:
             value = validator(instance, value)
+        return value
   

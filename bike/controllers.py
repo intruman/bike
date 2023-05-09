@@ -31,6 +31,9 @@ class Controller:
             return ret
         return item
 
+    def default(self, dct):
+        return "dict"
+
     def json_parser(self, o: Any) -> Any:
         if hasattr(o, "dict"):
             return self.default(o.dict())
