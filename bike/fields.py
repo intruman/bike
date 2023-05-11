@@ -24,6 +24,7 @@ class Field:
         self.alias = alias
         self.required: bool = True
         self.list: bool = False
+        self.list_type = None
         self.object: bool = False
         self.model = None
         self.validators_pre = []
@@ -56,7 +57,7 @@ class Field:
         if self.type == int:
             value = int(value) if value else None
         if self.type == datetime.datetime:
-            value = datetime.datetime.strptime(value)
+            value = datetime.datetime.strptime(value, '')
         if self.type == datetime.date:
             value = datetime.datetime.strptime(value, '%Y-%m-%d').date()
         if self.type == float:
@@ -64,7 +65,7 @@ class Field:
         if self.type == bool:
             value = True if value == 'true' else False
         if self.list:
-            value = [self.type(**item) for item in value]
+            value = [self.list_type(**item) for item in value]
         for validator in self.validators_pos:
             value = validator(instance, value)
         return value

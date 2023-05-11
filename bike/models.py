@@ -5,6 +5,12 @@ from .fields import Field
 
 
 __validators__ = {}
+types_default = {
+    'str': '""',
+    'int': '0',
+    'float': '0.0',
+    'bool': 'False'
+}
 
 
 class ModelMetaclass(type):
@@ -34,18 +40,10 @@ def create_init_function(fields):
             else:
                 params_required_txt = f'{params_required_txt}, {param}' if params_required_txt else param
         else:
-            if field.default:
-                default = field.default
-            else:
-                default = {
-                    'str': '""',
-                    'int': '0',
-                    'float': '0.0',
-                    'bool': 'False'
-                }
-            param = f'{param} = {default.get(field.type.__name__, "None")}'
+            default = field.default or types_default.get(field.type.__name__, "None")
+            param = f'{param} = {default}'
             params_optional_txt = f'{params_optional_txt}, {param}' if params_optional_txt else param
-        statement = f'self.{k} = self.__fields__["{k}"].prepare_value({k}, self)'
+        statement = f'self.{k} = {k}'
         body_fn += f'\t{statement}\n'
     params_txt = f'*, {params_required_txt}, {params_optional_txt}'
     init_fn = f'def __init__(self, {params_txt}):\n{body_fn}'
@@ -126,7 +124,7 @@ def get_fields_from_annotations(cls, annotations=None, members=None):
                     field = Field(field_type=typee, name=name, default=value)
             else:
                 field = Field(field_type=typee, name=name)
-            field.model = model
+            # field.model = model
             if name in __validators__:
                 validators = __validators__[name]
                 for vali in validators:
@@ -136,6 +134,12 @@ def get_fields_from_annotations(cls, annotations=None, members=None):
                         field.validators_pos.append(vali['func'])
                 del __validators__[name]
             opts = typee.__dict__
+            type_memberes = inspect.getmembers(typee)
+            opts_members = inspect.getmembers(opts)
+            args = getattr(typee, '__args__', ())
+            if args and typee.__name__ == 'list':
+                field.list = True
+                field.list_type = args[0]
             if '__origin__' in opts:
                 args = typee.__args__
                 origin = typee.__origin__

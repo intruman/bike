@@ -25,10 +25,11 @@ def test_instance_model():
     ...
 
 
-def tests_nested_models():
+def test_nested_models():
     @bike.model()
     class Phone:
-        code: str
+        country_code: str
+        local_code: str
         number: str
 
     @bike.model()
@@ -36,5 +37,22 @@ def tests_nested_models():
         name: str
         phones: list[Phone]
     ...
-
-
+    data = {
+        'name': 'Aline Mark',
+        'phones': [
+            {
+                'country_code': '+1',
+                'local_code': '010',
+                'number': '134354325'
+            },
+            {
+                'country_code': '+2',
+                'local_code': '010',
+                'number': '134565436'
+            }
+        ]
+    }
+    ...
+    p1 = Person(**data)
+    assert p1.phones[0].country_code == '+1'
+    assert p1.phones[1].country_code == '+2'
