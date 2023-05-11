@@ -54,18 +54,24 @@ class Field:
             value = validator(instance, value)
         if not value:
             value = self.default or None
-        if self.type == int:
-            value = int(value) if value else None
-        if self.type == datetime.datetime:
-            value = datetime.datetime.strptime(value, '')
-        if self.type == datetime.date:
-            value = datetime.datetime.strptime(value, '%Y-%m-%d').date()
-        if self.type == float:
-            value = float(value)
-        if self.type == bool:
-            value = True if value == 'true' else False
         if self.list:
             value = [self.list_type(**item) for item in value]
+        elif self.object:
+            value = self.list_type(**value)
+        else:
+            match self.type:
+                case int():
+                    value = int(value) if value else None
+                case datetime.datetime():
+                    value = datetime.datetime.strptime(value, '')
+                case datetime.date():
+                    value = datetime.datetime.strptime(value, '%Y-%m-%d').date()
+                case float():
+                    value = float(value)
+                case bool():
+                    value = True if value == 'true' else False
+                case str():
+                    value = str(value)
         for validator in self.validators_pos:
             value = validator(instance, value)
         return value

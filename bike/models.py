@@ -134,8 +134,8 @@ def get_fields_from_annotations(cls, annotations=None, members=None):
                         field.validators_pos.append(vali['func'])
                 del __validators__[name]
             opts = typee.__dict__
-            type_memberes = inspect.getmembers(typee)
-            opts_members = inspect.getmembers(opts)
+            # type_memberes = inspect.getmembers(typee)
+            # opts_members = inspect.getmembers(opts)
             args = getattr(typee, '__args__', ())
             if args and typee.__name__ == 'list':
                 field.list = True
