@@ -1,6 +1,8 @@
 import inspect
 import json
 from typing import Set, Any
+
+import bike
 from .fields import Field
 
 
@@ -32,7 +34,10 @@ def create_init_function(fields):
     params_optional_txt = ''
     body_fn = ''
     for k, field in fields.items():
-        param = f'{k}: {field.type.__name__}'
+        if field.object:
+            param = f'{k}: dict'
+        else:
+            param = f'{k}: {field.type.__name__}'
         if field.required:
             if field.default:
                 param = f"{param} = '{field.default}'"
@@ -134,12 +139,13 @@ def get_fields_from_annotations(cls, annotations=None, members=None):
                         field.validators_pos.append(vali['func'])
                 del __validators__[name]
             opts = typee.__dict__
-            # type_memberes = inspect.getmembers(typee)
-            # opts_members = inspect.getmembers(opts)
             args = getattr(typee, '__args__', ())
             if args and typee.__name__ == 'list':
                 field.list = True
                 field.list_type = args[0]
+            if inspect.isclass(typee) and issubclass(typee, bike.Model):
+                field.object = True
+                field.list_type = typee
             if '__origin__' in opts:
                 args = typee.__args__
                 origin = typee.__origin__

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A model dict method.
 - A model json method.
 - __init__ method of Model class created dynamically by Field instance list.
+- Nested models.
 
 
 ## [0.1.0] - 2022-03-11

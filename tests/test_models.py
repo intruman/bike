@@ -1,5 +1,4 @@
 from typing import Optional
-from dataclasses import dataclass
 import bike
 
 
@@ -27,6 +26,15 @@ def test_instance_model():
 
 def test_nested_models():
     @bike.model()
+    class Address:
+        address_1: str
+        address_2: str = ''
+        city: str
+        state: str
+        code: str
+        country: str
+
+    @bike.model()
     class Phone:
         country_code: str
         local_code: str
@@ -35,10 +43,21 @@ def test_nested_models():
     @bike.model()
     class Person:
         name: str
+        address: Address
         phones: list[Phone]
+
     ...
+
     data = {
         'name': 'Aline Mark',
+        'address': {
+            'address_1': '239 W 45th St',
+            'address_2': '',
+            'city': 'New York',
+            'state': 'NY',
+            'code': '10036',
+            'country': 'EUA'
+        },
         'phones': [
             {
                 'country_code': '+1',
@@ -47,7 +66,7 @@ def test_nested_models():
             },
             {
                 'country_code': '+2',
-                'local_code': '010',
+                'local_code': '011',
                 'number': '134565436'
             }
         ]
@@ -56,3 +75,5 @@ def test_nested_models():
     p1 = Person(**data)
     assert p1.phones[0].country_code == '+1'
     assert p1.phones[1].country_code == '+2'
+    assert p1.phones[1].local_code == '011'
+    assert p1.address.state == 'NY'
