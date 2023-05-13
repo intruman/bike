@@ -71,9 +71,50 @@ def test_nested_models():
             }
         ]
     }
+
     ...
+
     p1 = Person(**data)
     assert p1.phones[0].country_code == '+1'
     assert p1.phones[1].country_code == '+2'
     assert p1.phones[1].local_code == '011'
     assert p1.address.state == 'NY'
+
+    ...
+
+    json_str = p1.json()
+    assert json_str != ''
+
+
+def test_json_parser_models():
+    @bike.model()
+    class Make:
+        name: str
+        country: str
+
+    @bike.model()
+    class Car:
+        name: str
+        make: Make
+
+    ...
+
+    data = {
+        'name': 'Leaf',
+        'make': {
+            'name': 'Nissan',
+            'country': 'JP'
+        }
+    }
+    import json
+    json_str_base = json.dumps(data)
+
+    ...
+
+    c1 = Car(**data)
+    assert c1.make.name == 'Nissan'
+
+    ...
+
+    json_str = c1.json()
+    assert json_str == json_str_base

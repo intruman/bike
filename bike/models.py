@@ -194,7 +194,12 @@ class Model:
             if alias:
                 dic[field.alias or field.name] = self.__dict__[field.name]
             else:
-                dic[field.name] = self.__dict__[field.name]
+                value = getattr(self, field.name)
+                if isinstance(value, list):
+                    value = [item.dict() if isinstance(item, bike.Model) else item for item in value]
+                elif isinstance(value, bike.Model):
+                    value = value.dict()
+                dic[field.name] = value
         for name in self.__fields_type_list__:
             dic[name] = [item.dict() for item in dic[name]]
         return dic
