@@ -2,6 +2,8 @@ import inspect
 import datetime
 from typing import Any
 
+import bike
+
 
 class Field:
     def __new__(cls, *args, **kwargs):
@@ -41,11 +43,11 @@ class Field:
         return value
 
     def __set__(self, obj, value):
-        value = self.prepare_value(value, self)
+        value = self.__prepare_value(value, self)
         setattr(obj, f'_{self.name}', value)
 
-    def prepare_value(self, value, instance):
-        if (value is None or value == '') and self.required:
+    def __prepare_value(self, value, instance):
+        if (value is None or str(value) == '') and self.required:
             if self.default is not None:
                 return self.default
             else:
@@ -55,9 +57,11 @@ class Field:
         if not value:
             value = self.default or None
         if self.list:
-            value = [self.list_type(**item) for item in value]
+            value = [
+                self.list_type(**item) if isinstance(item, dict) else self.list_type(item) for item in value
+            ]
         elif self.object:
-            value = self.list_type(**value)
+            value = self.list_type(**value) if isinstance(value, dict) else value
         else:
             match self.type:
                 case int():

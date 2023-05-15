@@ -118,3 +118,63 @@ def test_json_parser_models():
 
     json_str = c1.json()
     assert json_str == json_str_base
+
+
+def test_compare_instances():
+    @bike.model()
+    class Book:
+        title: str
+        edition: str
+        num_pages: int
+        authors: list[str]
+
+    ...
+
+    b1 = Book(
+        title='Moby Dick',
+        edition=1,
+        num_pages=120,
+        authors=[
+            'Herman Melville'
+        ]
+    )
+    b2 = Book(
+        title='Moby Dick',
+        edition=1,
+        num_pages=120,
+        authors=[
+            'Herman Melville'
+        ]
+    )
+    b3 = Book(
+        title='Hamlet',
+        edition=1,
+        num_pages=320,
+        authors=[
+            'William Shakespeare'
+        ]
+    )
+    assert b1 == b2
+    assert b1 != b3
+
+
+def test_instance_nested_by_model():
+    @bike.model()
+    class Make:
+        name: str
+        country: str
+
+    @bike.model()
+    class Car:
+        name: str
+        make: Make
+    ...
+    m1 = Make(
+        name='Nissan',
+        country='JP'
+    )
+    c1 = Car(
+        name='Leaf',
+        make=m1
+    )
+    assert c1.make.country == 'JP'

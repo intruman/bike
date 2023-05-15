@@ -35,7 +35,7 @@ def create_init_function(fields):
     body_fn = ''
     for k, field in fields.items():
         if field.object:
-            param = f'{k}: dict'
+            param = f'{k}: dict | Any'
         else:
             param = f'{k}: {field.type.__name__}'
         if field.required:
@@ -100,12 +100,14 @@ def prepare_fields(cls):
     members = {mb[0]: mb[1] for mb in inspect.getmembers(cls)}
     annotations = cls.__annotations__
     fields, fields_list, fields_object = get_fields_from_annotations(cls, annotations=annotations, members=members)
+    class_name = cls.__name__
     if not hasattr(cls, '__ready__'):
-        cls = create_custom_class(cls.__name__, fields)
+        cls = create_custom_class(class_name, fields)
     cls.__fields__ = fields
     cls.__ready__ = True
     cls.__fields_type_list__ = fields_list
     cls.__fields_type_object__ = fields_object
+    cls.__name__ = class_name
     init_fn = create_init_function(fields)
     setattr(cls, '__init__', init_fn)
     return cls
@@ -176,6 +178,20 @@ class Model:
         obj = super(Model, cls).__new__(cls)
         return obj
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}()'
+
+    def __str__(self):
+        return f'{self.__class__.__name__}()'
+
+    def __eq__(self, other) -> bool:
+        equal = True
+        for f_name in self.__fields__.keys():
+            equal = getattr(self, f_name) == getattr(other, f_name)
+            if not equal:
+                break
+        return equal
+
     def dict(
             self,
             *,
@@ -187,9 +203,7 @@ class Model:
             excludes = set()
         dic = {}
         for field in self.__fields__.values():
-            if field.name in excludes:
-                continue
-            if not null and self.__dict__[field.name] is None:
+            if field.name in excludes or (not null and self.__dict__[field.name] is None):
                 continue
             if alias:
                 dic[field.alias or field.name] = self.__dict__[field.name]
