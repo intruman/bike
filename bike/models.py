@@ -1,5 +1,6 @@
 import inspect
 import json
+import types
 from typing import Set, Any
 
 import bike
@@ -57,11 +58,6 @@ def create_init_function(fields):
     return ns['__init__']
 
 
-def create_custom_class(name, fields):
-    cls = type(name, (Model,), {**fields, })
-    return cls
-
-
 def prepare_db_config(cls, table: str, pk: str = ''):
     cls.__db__ = {
         'table': table if table else cls.__name__.lower(),
@@ -101,13 +97,16 @@ def prepare_fields(cls):
     annotations = cls.__annotations__
     fields, fields_list, fields_object = get_fields_from_annotations(cls, annotations=annotations, members=members)
     class_name = cls.__name__
-    if not hasattr(cls, '__ready__'):
-        cls = create_custom_class(class_name, fields)
+    if issubclass(cls, Model):
+        for name, field in fields.items():
+            setattr(cls, name, field)
+    elif not hasattr(cls, '__ready__') and not issubclass(cls, Model):
+        cls = type(class_name, (Model,), {**fields, })
     cls.__fields__ = fields
-    cls.__ready__ = True
     cls.__fields_type_list__ = fields_list
     cls.__fields_type_object__ = fields_object
     cls.__name__ = class_name
+    cls.__ready__ = True
     init_fn = create_init_function(fields)
     setattr(cls, '__init__', init_fn)
     return cls
@@ -174,7 +173,7 @@ class Model:
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, '__ready__'):
-            prepare_fields(cls)
+            cls = prepare_fields(cls)
         obj = super(Model, cls).__new__(cls)
         return obj
 

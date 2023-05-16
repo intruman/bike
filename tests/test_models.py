@@ -127,9 +127,7 @@ def test_compare_instances():
         edition: str
         num_pages: int
         authors: list[str]
-
     ...
-
     b1 = Book(
         title='Moby Dick',
         edition=1,
@@ -159,13 +157,11 @@ def test_compare_instances():
 
 
 def test_instance_nested_by_model():
-    @bike.model()
-    class Make:
+    class Make(bike.Model):
         name: str
         country: str
 
-    @bike.model()
-    class Car:
+    class Car(bike.Model):
         name: str
         make: Make
     ...
@@ -177,4 +173,9 @@ def test_instance_nested_by_model():
         name='Leaf',
         make=m1
     )
+    c2 = Car(
+        name='Sentra',
+        make=m1
+    )
     assert c1.make.country == 'JP'
+    assert c2.make.name == 'Nissan'
