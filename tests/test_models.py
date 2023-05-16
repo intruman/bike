@@ -164,7 +164,9 @@ def test_instance_nested_by_model():
     class Car(bike.Model):
         name: str
         make: Make
+
     ...
+
     m1 = Make(
         name='Nissan',
         country='JP'

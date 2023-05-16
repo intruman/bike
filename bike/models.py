@@ -191,6 +191,16 @@ class Model:
                 break
         return equal
 
+    def __hash__(self):
+        values = []
+        for f_name in self.__fields__.keys():
+            value = getattr(self, f_name)
+            if isinstance(value, bike.Model):
+                value = hash(value)
+            values.append(value)
+        values = tuple(values)
+        return hash(values)
+
     def dict(
             self,
             *,
