@@ -1,6 +1,5 @@
 import inspect
 import json
-import types
 from typing import Set, Any
 
 import bike
@@ -14,20 +13,6 @@ types_default = {
     'float': '0.0',
     'bool': 'False'
 }
-
-
-class ModelMetaclass(type):
-    def __new__(mcs, *args, **kwargs):
-        members = inspect.getmembers(mcs)
-        return mcs
-
-
-class FieldsList:
-    def __get__(self, obj):
-        ...
-
-    def __set__(self, obj, value):
-        ...
 
 
 def create_init_function(fields):
@@ -78,15 +63,6 @@ def db(table: str = '', pk: str = ''):
     return wrapper
 
 
-def validator(field, pre=False):
-    def wrapper(fnc, *args, **kwargs):
-        if field not in __validators__:
-            __validators__[field] = []
-        __validators__[field].append({'func': fnc, 'pre': pre})
-        return fnc
-    return wrapper
-
-
 def prepare_class_members(members):
     ret = {mb[0]: mb[1] for mb in members}
     return ret
@@ -96,12 +72,22 @@ def prepare_fields(cls):
     members = {mb[0]: mb[1] for mb in inspect.getmembers(cls)}
     annotations = cls.__annotations__
     fields, fields_list, fields_object = get_fields_from_annotations(cls, annotations=annotations, members=members)
+    remove_members = []
+    methods = {}
+    for name, member in cls.__dict__.items():
+        if hasattr(member, '__validator_field__'):
+            field = fields.get('name', None)
+            pre = getattr(member, '__validator_pre__')
+            field.set_validators(member, pre=pre)
+            remove_members.append(name)
+        elif inspect.isfunction(member) and not name.startswith('__') and not name.endswith('__'):
+            methods[name] = member
     class_name = cls.__name__
     if issubclass(cls, Model):
         for name, field in fields.items():
             setattr(cls, name, field)
     elif not hasattr(cls, '__ready__') and not issubclass(cls, Model):
-        cls = type(class_name, (Model,), {**fields, })
+        cls = type(class_name, (Model,), {**fields, **methods})
     cls.__fields__ = fields
     cls.__fields_type_list__ = fields_list
     cls.__fields_type_object__ = fields_object
@@ -165,6 +151,14 @@ def get_fields_from_annotations(cls, annotations=None, members=None):
                     fields_object.append(name)
             fields[name] = field
     return fields, fields_list, fields_object
+
+
+def validator(field: str, pre=True):
+    def wrapper(func):
+        func.__validator_field__ = field
+        func.__validator_pre__ = pre
+        return func
+    return wrapper
 
 
 class Model:

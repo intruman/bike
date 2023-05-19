@@ -1,8 +1,5 @@
-import inspect
 import datetime
-from typing import Any
-
-import bike
+from typing import Any, Callable
 
 
 class Field:
@@ -53,7 +50,7 @@ class Field:
             else:
                 raise Exception(f'Field {self.name} required.')
         for validator in self.validators_pre:
-            value = validator(instance, value)
+            value = validator(self.model, value)
         if not value:
             value = self.default or None
         if self.list:
@@ -79,4 +76,9 @@ class Field:
         for validator in self.validators_pos:
             value = validator(instance, value)
         return value
-  
+
+    def set_validators(self, func: callable, pre: bool):
+        if pre:
+            self.validators_pre.append(func)
+        else:
+            self.validators_pos.append(func)

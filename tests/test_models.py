@@ -156,7 +156,7 @@ def test_compare_instances():
     assert b1 != b3
 
 
-def test_instance_nested_by_model():
+def test_instance_nested_by_heritage():
     class Make(bike.Model):
         name: str
         country: str
@@ -181,3 +181,25 @@ def test_instance_nested_by_model():
     )
     assert c1.make.country == 'JP'
     assert c2.make.name == 'Nissan'
+
+
+def test_field_validate():
+    @bike.model()
+    class Character:
+        name: str
+        health: float = 1.0
+
+        @bike.validator('health')
+        def health_validator(cls, val):
+            return val
+
+        def a_method(self):
+            return self.name
+    ...
+    c1 = Character(
+        name='Ninki',
+        health=0.4
+    )
+    assert c1.name == 'Ninki'
+    assert c1.health == 0.4
+    assert c1.a_method() == 'Ninki'

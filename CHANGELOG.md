@@ -21,8 +21,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Created basic project structure.
 
 
-
-
-
-[Unreleased]: https://github.com/manasseslima/restfy/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/manasseslima/bike/compare/v0.2.0...HEAD
 [0.1.0]: https://github.com/manasseslima/bike/releases/tag/v0.1.0
