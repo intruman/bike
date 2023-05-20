@@ -45,9 +45,7 @@ def test_nested_models():
         name: str
         address: Address
         phones: list[Phone]
-
     ...
-
     data = {
         'name': 'Aline Mark',
         'address': {
