@@ -203,3 +203,35 @@ def test_field_validate():
     assert c1.name == 'Ninki'
     assert c1.health == 0.4
     assert c1.a_method() == 'Ninki'
+
+
+def test_parsing_models_by_alias():
+    @bike.model(alias_load=False)
+    class Company:
+        name: str = bike.Field(prefix='st')
+        country: str = bike.Field(prefix='st')
+    ...
+    c1 = Company(
+        name='ACME CO.',
+        country='USA'
+    )
+    assert c1.country == 'USA'
+    ...
+    data = c1.dict(alias=True)
+    assert 'st_name' in data
+    assert 'st_country' in data
+
+
+def test_loading_models_by_alias():
+    @bike.model()
+    class Company:
+        name: str = bike.Field(alias='st_name')
+        country: str = bike.Field(alias='st_country')
+    ...
+    payload = {
+        'st_name': 'Bussinext CO',
+        'st_country': 'UK'
+    }
+    c2 = Company(**payload)
+    ...
+    assert c2.name == 'Bussinext CO'

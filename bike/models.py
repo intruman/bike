@@ -20,10 +20,13 @@ def create_init_function(fields):
     params_optional_txt = ''
     body_fn = ''
     for k, field in fields.items():
+        name = field.alias if field.alias and field.alias_load else k
+        if field.prefix and field.alias_load:
+            name = f'{field.prefix}_{name}'
         if field.object:
-            param = f'{k}: dict | Any'
+            param = f'{name}: dict | Any'
         else:
-            param = f'{k}: {field.type.__name__}'
+            param = f'{name}: {field.type.__name__}'
         if field.required:
             if field.default:
                 param = f"{param} = '{field.default}'"
@@ -34,7 +37,7 @@ def create_init_function(fields):
             default = field.default or types_default.get(field.type.__name__, "None")
             param = f'{param} = {default}'
             params_optional_txt = f'{params_optional_txt}, {param}' if params_optional_txt else param
-        statement = f'self.{k} = {k}'
+        statement = f'self.{k} = {name}'
         body_fn += f'\t{statement}\n'
     params_txt = f'*, {params_required_txt}, {params_optional_txt}'
     init_fn = f'def __init__(self, {params_txt}):\n{body_fn}'
@@ -51,12 +54,6 @@ def prepare_db_config(cls, table: str, pk: str = ''):
     return cls
 
 
-def model():
-    def wrapper(cls):
-        return prepare_fields(cls)
-    return wrapper
-
-
 def db(table: str = '', pk: str = ''):
     def wrapper(cls):
         return prepare_db_config(cls, table=table, pk=pk)
@@ -68,10 +65,95 @@ def prepare_class_members(members):
     return ret
 
 
-def prepare_fields(cls):
+class Model:
+    __fields__: dict = {}
+    __fields_type_list__: list = []
+
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(cls, '__ready__'):
+            cls = prepare_fields(cls)
+        obj = super().__new__(cls)
+        return obj
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}()'
+
+    def __str__(self):
+        return f'{self.__class__.__name__}()'
+
+    def __call__(self):
+        return self
+
+    def __eq__(self, other) -> bool:
+        equal = True
+        for f_name in self.__fields__.keys():
+            equal = getattr(self, f_name) == getattr(other, f_name)
+            if not equal:
+                break
+        return equal
+
+    def __hash__(self):
+        values = []
+        for f_name in self.__fields__.keys():
+            value = getattr(self, f_name)
+            if isinstance(value, bike.Model):
+                value = hash(value)
+            values.append(value)
+        values = tuple(values)
+        return hash(values)
+
+    def dict(
+            self,
+            *,
+            alias: bool = False,
+            null: bool = True,
+            exclude: Set = None
+    ) -> dict:
+        if not exclude:
+            exclude = set()
+        dic = {}
+        for field in self.__fields__.values():
+            if field.name in exclude or (not null and self.__dict__[field.name] is None):
+                continue
+            value = getattr(self, field.name)
+            if isinstance(value, list):
+                value = [item.dict() if isinstance(item, bike.Model) else item for item in value]
+            elif isinstance(value, bike.Model):
+                value = value.dict()
+            key_name = field.name
+            if alias:
+                key_name = field.alias if field.alias else key_name
+                if field.prefix:
+                    key_name = f'{field.prefix}_{key_name}'
+            dic[key_name] = value
+        for name in self.__fields_type_list__:
+            dic[name] = [item.dict() for item in dic[name]]
+        return dic
+
+    def json(
+            self,
+            alias: bool = False,
+            null: bool = True,
+            exclude: set = None,
+    ) -> str:
+        dic = self.dict(
+            exclude=exclude,
+            alias=alias,
+            null=null,
+        )
+        jsn = json.dumps(dic)
+        return jsn
+
+
+def prepare_fields(cls, alias_load: bool = True) -> Model:
     members = {mb[0]: mb[1] for mb in inspect.getmembers(cls)}
     annotations = cls.__annotations__
-    fields, fields_list, fields_object = get_fields_from_annotations(cls, annotations=annotations, members=members)
+    fields, fields_list, fields_object = get_fields_from_annotations(
+        cls,
+        annotations=annotations,
+        members=members,
+        alias_load=alias_load,
+    )
     remove_members = []
     methods = {}
     for name, member in cls.__dict__.items():
@@ -98,7 +180,12 @@ def prepare_fields(cls):
     return cls
 
 
-def get_fields_from_annotations(cls, annotations=None, members=None):
+def get_fields_from_annotations(
+        cls: type,
+        annotations=None,
+        members=None,
+        alias_load: bool = True
+):
     annotations = annotations or {}
     members = members or {}
     fields = {}
@@ -117,6 +204,7 @@ def get_fields_from_annotations(cls, annotations=None, members=None):
             else:
                 field = Field(field_type=typee, name=name)
             # field.model = model
+            field.alias_load = alias_load
             if name in __validators__:
                 validators = __validators__[name]
                 for vali in validators:
@@ -161,67 +249,9 @@ def validator(field: str, pre=True):
     return wrapper
 
 
-class Model:
-    __fields__: dict = {}
-    __fields_type_list__: list = []
-
-    def __new__(cls, *args, **kwargs):
-        if not hasattr(cls, '__ready__'):
-            cls = prepare_fields(cls)
-        obj = super(Model, cls).__new__(cls)
-        return obj
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}()'
-
-    def __str__(self):
-        return f'{self.__class__.__name__}()'
-
-    def __eq__(self, other) -> bool:
-        equal = True
-        for f_name in self.__fields__.keys():
-            equal = getattr(self, f_name) == getattr(other, f_name)
-            if not equal:
-                break
-        return equal
-
-    def __hash__(self):
-        values = []
-        for f_name in self.__fields__.keys():
-            value = getattr(self, f_name)
-            if isinstance(value, bike.Model):
-                value = hash(value)
-            values.append(value)
-        values = tuple(values)
-        return hash(values)
-
-    def dict(
-            self,
-            *,
-            alias: bool = False,
-            null: bool = True,
-            excludes: Set = None
-    ) -> dict:
-        if not excludes:
-            excludes = set()
-        dic = {}
-        for field in self.__fields__.values():
-            if field.name in excludes or (not null and self.__dict__[field.name] is None):
-                continue
-            if alias:
-                dic[field.alias or field.name] = self.__dict__[field.name]
-            else:
-                value = getattr(self, field.name)
-                if isinstance(value, list):
-                    value = [item.dict() if isinstance(item, bike.Model) else item for item in value]
-                elif isinstance(value, bike.Model):
-                    value = value.dict()
-                dic[field.name] = value
-        for name in self.__fields_type_list__:
-            dic[name] = [item.dict() for item in dic[name]]
-        return dic
-
-    def json(self) -> str:
-        dic = self.dict()
-        jsn = json.dumps(dic)
-        return jsn
+def model(
+        alias_load: bool = True
+) -> Model:
+    def wrapper(cls) -> Model:
+        return prepare_fields(cls, alias_load=alias_load)
+    return wrapper

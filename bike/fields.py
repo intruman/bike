@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Callable
+from typing import Any
 
 
 class Field:
@@ -9,18 +9,21 @@ class Field:
 
     def __init__(
             self,
-            default: Any = None,
+            default: ... = None,
             *,
             field_type: type = str,
             name: str = '',
             null: bool = True,
-            alias: str = ''
+            alias: str = '',
+            prefix: str = ''
     ):
         self.default = default
         self.type = field_type
         self.name = name
         self.null = null
         self.alias = alias
+        self.prefix = prefix
+        self.alias_load = True
         self.required: bool = True
         self.list: bool = False
         self.list_type = None
