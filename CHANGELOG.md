@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+
+
+## [0.3.0] - 2023-05-21
 ### Add
 - Model class features.
 - Validators.
@@ -14,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A model json method.
 - __init__ method of Model class created dynamically by Field instance list.
 - Nested models.
+
+
+## [0.2.0] - 2022-03-11
 
 
 ## [0.1.0] - 2022-03-11
