@@ -187,20 +187,23 @@ def test_field_validate():
         name: str
         health: float = 1.0
 
+        @bike.validator('name')
+        def name_validator(cls, val):
+            return str(val).title()
+
         @bike.validator('health')
         def health_validator(cls, val):
+            if val < 0:
+                return 0.0
+            elif val > 1:
+                return 1.0
             return val
 
-        def a_method(self):
-            return self.name
     ...
-    c1 = Character(
-        name='Ninki',
-        health=0.4
-    )
-    assert c1.name == 'Ninki'
-    assert c1.health == 0.4
-    assert c1.a_method() == 'Ninki'
+
+    c1 = Character(name='ninki walker', health=2.0)
+    assert c1.name == 'Ninki Walker'
+    assert c1.health == 1.0
 
 
 def test_parsing_models_by_alias():

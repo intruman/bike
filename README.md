@@ -105,11 +105,80 @@ print(p1.phones[0].country_code)
 print(p1.phones[1].local_code)
 print(p1.address.state)
 ```
-```shell
-$ python implement.py
+``` editorconfig
+-- output
 +1
-001
+011
 NY
 ```
-The model Person
 
+## Parsing to Json and Dict
+
+We can parse data to dict or json by using
+.dict() or json() methods respectively.
+
+```python
+import bike
+
+
+@bike.model()
+class Make:
+    name: str
+    country: str
+
+    
+@bike.model()
+class Car:
+    name: str
+    make: Make
+    
+
+m1 = Make(name='Nissan', country='JP')
+c1 = Car(name='Leaf', make=m1)
+
+c1_dict = c1.dict()
+c1_json = c1.json()
+
+print(c1_dict['make']['country'])
+print(c1_json)
+```
+```ignorelang
+-- output
+JP
+{"name": "Leaf", "make": {"name": "Nissan", "country": "JP"}}
+```
+
+## Validating Fields
+
+Fields can be validated adding the validator annotation.
+
+```python
+import bike
+
+
+@bike.model()
+class Character:
+    name: str
+    health: float = 1.0
+
+    @bike.validator('name')
+    def name_validator(cls, val):
+        return val.title()
+    
+    @bike.validator('health')
+    def health_validator(cls, val):
+        if val < 0: 
+            return 0.0
+        elif val > 1:
+            return 1.0
+        return val
+    
+    
+c1 = Character(name='ninki walker', health=2.0)
+print(c1.name)
+print(c1.health)
+```
+```ignorelang
+Ninki Walker
+1.0
+```

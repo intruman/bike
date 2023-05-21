@@ -158,7 +158,8 @@ def prepare_fields(cls, alias_load: bool = True) -> Model:
     methods = {}
     for name, member in cls.__dict__.items():
         if hasattr(member, '__validator_field__'):
-            field = fields.get('name', None)
+            field_name = getattr(member, '__validator_field__')
+            field = fields.get(field_name, None)
             pre = getattr(member, '__validator_pre__')
             field.set_validators(member, pre=pre)
             remove_members.append(name)
