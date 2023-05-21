@@ -29,7 +29,7 @@ p1 = Person(
 )
 ```
 A Person instance can be created passing the attributes.
-Also can be instatiated by a dict data.
+Also can be instantiated by a dict.
 ```python
 ...
 
@@ -102,14 +102,11 @@ payload = {
 }
 p1 = Person(**payload)
 print(p1.phones[0].country_code)
+# +1
 print(p1.phones[1].local_code)
+# 011
 print(p1.address.state)
-```
-``` editorconfig
--- output
-+1
-011
-NY
+# NY
 ```
 
 ## Parsing to Json and Dict
@@ -137,15 +134,12 @@ m1 = Make(name='Nissan', country='JP')
 c1 = Car(name='Leaf', make=m1)
 
 c1_dict = c1.dict()
-c1_json = c1.json()
-
 print(c1_dict['make']['country'])
+# JP
+
+c1_json = c1.json()
 print(c1_json)
-```
-```ignorelang
--- output
-JP
-{"name": "Leaf", "make": {"name": "Nissan", "country": "JP"}}
+# {"name": "Leaf", "make": {"name": "Nissan", "country": "JP"}}
 ```
 
 ## Validating Fields
@@ -176,9 +170,7 @@ class Character:
     
 c1 = Character(name='ninki walker', health=2.0)
 print(c1.name)
+# Ninki Walker
 print(c1.health)
-```
-```ignorelang
-Ninki Walker
-1.0
+# 1.0
 ```
