@@ -63,19 +63,23 @@ class Field:
         elif self.object:
             value = self.list_type(**value) if isinstance(value, dict) else value
         else:
-            match self.type:
-                case int():
+            try:
+                if self.type == int:
                     value = int(value) if value else None
-                case datetime.datetime():
+                elif self.type == datetime.datetime:
                     value = datetime.datetime.strptime(value, '')
-                case datetime.date():
+                elif self.type == datetime.date:
                     value = datetime.datetime.strptime(value, '%Y-%m-%d').date()
-                case float():
+                elif self.type == float:
                     value = float(value)
-                case bool():
+                elif self.type == bool:
                     value = True if value == 'true' else False
-                case str():
+                elif self.type == str:
                     value = str(value)
+                else:
+                    value = self.type(value)
+            except Exception as e:
+                raise Exception(f'Field[{self.name}] - {e}')
         for validator in self.validators_pos:
             value = validator(instance, value)
         return value
