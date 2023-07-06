@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bike"
-version = "0.3.3"
+version = "0.3.4"
 description = "A lightweight model validator for modern projects."
 authors = ["Manasses Lima <manasseslima@gmail.com>"]
 license = "MIT"

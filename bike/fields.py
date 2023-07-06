@@ -1,6 +1,8 @@
 import datetime
 from typing import Any
 
+import bike
+
 
 class Field:
     def __new__(cls, *args, **kwargs):
@@ -58,7 +60,8 @@ class Field:
             value = self.default or None
         if self.list:
             value = [
-                self.list_type(**item) if isinstance(item, dict) else self.list_type(item) for item in value
+                self.list_type(**item) if isinstance(item, dict)
+                else (item if isinstance(item, bike.Model) else self.list_type(item)) for item in value
             ]
         elif self.object:
             value = self.list_type(**value) if isinstance(value, dict) else value

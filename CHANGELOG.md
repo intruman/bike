@@ -8,7 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
-## [0.3.3]
+## [0.3.4] - 2023-07-06
+### Fixed
+- Fixed error when a model object is passed as value.
+
+
+## [0.3.3] - 2023-07-06
 ### Fixed
 - Fixed error when a model has optionals bike models attributes.
 
