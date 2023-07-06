@@ -84,6 +84,27 @@ def test_nested_models():
     assert json_str != ''
 
 
+def test_nested_with_optional_reference():
+    @bike.model()
+    class Person:
+        name: str
+        identifier: str
+
+    @bike.model()
+    class Contract:
+        identifier: str
+        chassi: Optional[dict]
+        person: Optional[Person]
+
+    if __name__ == '__main__':
+        chassi = {}
+        person = Person(name='Linda Miles', identifier='12345678909')
+        con = Contract(identifier='348759398475')
+        con.chassi = chassi
+        con.person = person
+        assert con.proponente.nome == 'Linda Miles'
+
+
 def test_json_parser_models():
     @bike.model()
     class Make:

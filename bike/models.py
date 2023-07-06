@@ -11,7 +11,7 @@ types_default = {
     'str': '""',
     'int': '0',
     'float': '0.0',
-    'bool': 'False'
+    'bool': 'False',
 }
 
 
@@ -24,9 +24,15 @@ def create_init_function(fields):
         if field.prefix and field.alias_load:
             name = f'{field.prefix}_{name}'
         if field.object:
-            param = f'{name}: dict | Any'
+            if issubclass(field.type, bike.Model):
+                param = f'{name}: "{field.type.__name__}"'
+            else:
+                param = f'{name}: dict | Any'
         else:
-            param = f'{name}: {field.type.__name__}'
+            if issubclass(field.type, bike.Model):
+                param = f'{name}: "{field.type.__name__}"'
+            else:
+                param = f'{name}: {field.type.__name__}'
         if field.required:
             if field.default:
                 param = f"{param} = '{field.default}'"

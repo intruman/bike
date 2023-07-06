@@ -54,7 +54,7 @@ class Field:
                 raise Exception(f'Field {self.name} required.')
         for validator in self.validators_pre:
             value = validator(self.model, value)
-        if not value:
+        if value is None:
             value = self.default or None
         if self.list:
             value = [
@@ -76,7 +76,7 @@ class Field:
                     value = True if value == 'true' else False
                 elif self.type == str:
                     value = str(value)
-                else:
+                elif self.required:
                     value = self.type(value)
             except Exception as e:
                 raise Exception(f'Field[{self.name}] - {e}')
