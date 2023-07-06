@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.3.3]
+### Fixed
+- Fixed error when a model has optionals bike models attributes.
+
+
 ## [0.3.2] - 2023-06-02
 ### Fixed
 - Fixed an error that allow models accept different field types.
@@ -15,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.1] - 2023-05-26
 ### Fixed
-- Fix an error on pip install process.
+- Fixed an error on pip install process.
 
 
 ## [0.3.0] - 2023-05-21
