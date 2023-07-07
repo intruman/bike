@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Changed
+- Bike model decorator can be used just with model instead of model().
+
 
 ## [0.3.5] - 2023-07-07
 ### Fixed

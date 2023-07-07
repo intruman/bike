@@ -170,6 +170,7 @@ def prepare_fields(cls, alias_load: bool = True) -> Model:
             remove_members.append(name)
         elif inspect.isfunction(member) and not name.startswith('__') and not name.endswith('__'):
             methods[name] = member
+    module_name = cls.__module__
     class_name = cls.__name__
     if issubclass(cls, Model):
         for name, field in fields.items():
@@ -180,6 +181,7 @@ def prepare_fields(cls, alias_load: bool = True) -> Model:
     cls.__fields_type_list__ = fields_list
     cls.__fields_type_object__ = fields_object
     cls.__name__ = class_name
+    cls.__module__ = module_name
     cls.__ready__ = True
     init_fn = create_init_function(fields)
     setattr(cls, '__init__', init_fn)
@@ -256,8 +258,14 @@ def validator(field: str, pre=True):
 
 
 def model(
+        cls=None,
+        /,
+        *,
         alias_load: bool = True
-) -> callable:
-    def wrapper(cls) -> Model:
+):
+    def wrapper(cls):
         return prepare_fields(cls, alias_load=alias_load)
-    return wrapper
+
+    if cls is None:
+        return wrapper
+    return wrapper(cls)
