@@ -7,10 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5] - 2023-07-07
+### Fixed
+- Fixed an error when a model was instantiated by unpacked dict with extra values.
+
 
 ## [0.3.4] - 2023-07-06
 ### Fixed
-- Fixed error when a model object is passed as value.
+- Fixed error when a model object was passed as value.
 
 
 ## [0.3.3] - 2023-07-06

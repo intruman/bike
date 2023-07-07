@@ -96,13 +96,29 @@ def test_nested_with_optional_reference():
         chassi: Optional[dict]
         person: Optional[Person]
 
-    if __name__ == '__main__':
-        chassi = {}
-        person = Person(name='Linda Miles', identifier='12345678909')
-        con = Contract(identifier='348759398475')
-        con.chassi = chassi
-        con.person = person
-        assert con.proponente.nome == 'Linda Miles'
+    chassi = {}
+    person = Person(name='Linda Miles', identifier='12345678909')
+    con = Contract(identifier='348759398475')
+    con.chassi = chassi
+    con.person = person
+    assert con.person.name == 'Linda Miles'
+
+
+def test_load_by_dict_with_other_keys():
+    @bike.model()
+    class Person:
+        name: str
+        identifier: str
+
+    person = {
+        'name': 'Linda Miles',
+        'identifier': '12345678909',
+        'social_code': '0983735342',
+        'hight': 1.65,
+    }
+    ps = Person(**person)
+    assert ps.name == 'Linda Miles'
+    assert ps.identifier == '12345678909'
 
 
 def test_json_parser_models():

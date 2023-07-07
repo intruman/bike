@@ -1,7 +1,6 @@
 import inspect
 import json
-from typing import Set, Any
-
+from typing import Set
 import bike
 from .fields import Field
 
@@ -45,7 +44,7 @@ def create_init_function(fields):
             params_optional_txt = f'{params_optional_txt}, {param}' if params_optional_txt else param
         statement = f'self.{k} = {name}'
         body_fn += f'\t{statement}\n'
-    params_txt = f'*, {params_required_txt}, {params_optional_txt}'
+    params_txt = ', '.join([arg for arg in (params_required_txt, params_optional_txt, '*args', '**kwargs') if arg])
     init_fn = f'def __init__(self, {params_txt}):\n{body_fn}'
     ns = {}
     exec(init_fn, None, ns)
@@ -258,7 +257,7 @@ def validator(field: str, pre=True):
 
 def model(
         alias_load: bool = True
-) -> Model:
+) -> callable:
     def wrapper(cls) -> Model:
         return prepare_fields(cls, alias_load=alias_load)
     return wrapper
