@@ -6,9 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+
+## [0.3.6]
 ### Added
 - Bike model decorator can be used just with model instead of model().
-
+### Fixed
+- Fix error on try set an empty string on required field. 
 
 ## [0.3.5] - 2023-07-07
 ### Fixed

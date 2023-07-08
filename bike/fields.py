@@ -49,7 +49,7 @@ class Field:
         setattr(obj, f'_{self.name}', value)
 
     def __prepare_value(self, value, instance):
-        if (value is None or str(value) == '') and self.required:
+        if value is None and self.required:
             if self.default is not None:
                 return self.default
             else:

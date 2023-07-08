@@ -109,11 +109,12 @@ def test_load_by_dict_with_other_keys():
     class Person:
         name: str
         identifier: str
+        social_code: str
 
     person = {
         'name': 'Linda Miles',
         'identifier': '12345678909',
-        'social_code': '0983735342',
+        'social_code': '',
         'hight': 1.65,
     }
     ps = Person(**person)
