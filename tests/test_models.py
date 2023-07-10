@@ -1,3 +1,4 @@
+import datetime
 from typing import Optional
 import bike
 
@@ -259,6 +260,40 @@ def test_parsing_models_by_alias():
     data = c1.dict(alias=True)
     assert 'st_name' in data
     assert 'st_country' in data
+
+
+def test_parsing_models_dict():
+    @bike.model
+    class Product:
+        id: str
+        name: str
+
+    @bike.model
+    class Item:
+        id: str
+        product: Product
+        quantity: float
+        value: float
+
+    @bike.model
+    class Sale:
+        value: float
+        items: dict[str, Item]
+
+    p1 = Product(id='4095894', name='Vulkan Mobile')
+    p2 = Product(id='6854986', name='Nexton Pad')
+    p3 = Product(id='0946456', name='Voltix Cell')
+    i1 = Item(id='5464564', product=p1, quantity=2, value=500.0)
+    i2 = Item(id='2345656', product=p3, quantity=1, value=300.0)
+    s1 = Sale(
+        value=800.0,
+        items={
+            i1.id: i1,
+            i2.id: i2
+        }
+    )
+    dct = s1.dict()
+    assert dct['items']['5464564']['value'] == 500.0
 
 
 def test_loading_models_by_alias():

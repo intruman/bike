@@ -123,6 +123,8 @@ class Model:
             value = getattr(self, field.name)
             if isinstance(value, list):
                 value = [item.dict() if isinstance(item, bike.Model) else item for item in value]
+            elif isinstance(value, dict):
+                value = {key: item.dict() if isinstance(item, bike.Model) else item for key, item in value.items()}
             elif isinstance(value, bike.Model):
                 value = value.dict()
             key_name = field.name
